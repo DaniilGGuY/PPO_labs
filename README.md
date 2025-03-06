@@ -34,11 +34,11 @@
 
 ## Use-Case диаграмма
 
-![use-case](img/use-case.png)
+![use-case](doc/img/use-case.png)
 
 ## ER-диаграмма сущностей
 
-![er](img/er.png)
+![er](doc/img/er.png)
 
 ## Пользовательские сценарии
 
@@ -73,12 +73,12 @@
 
 ### Сценарий с обслуживанием заказа
 
-![bpmn](img/bpmn1.png)
+![bpmn](doc/img/bpmn1.png)
 
 ### Сценарий с регистрацией нового пользователя
 
-![bpmn](img/bpmn2.png)
+![bpmn](doc/img/bpmn2.png)
 
 ### Сценарий с добавлением отзыва
 
-![bpmn](img/bpmn3.png)
+![bpmn](doc/img/bpmn3.png)
