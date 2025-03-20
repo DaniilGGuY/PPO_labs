@@ -82,3 +82,20 @@
 ### Сценарий с добавлением отзыва
 
 ![bpmn](doc/img/bpmn3.png)
+
+## Технологический стек
+
+* Тип приложения: MPA
+* Backend: Java
+* Frontend: HTML, CSS
+* БД: PostgreSQL (взаимодействие через JDBC)
+* Сборка: Gradle
+* Фреймворки: Spring
+
+## Верхнеуровневое разбиение на компоненты
+
+![components](doc/img/components.png)
+
+## Диаграмма классов
+
+![classes](doc/img/classes.png)
