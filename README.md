@@ -88,7 +88,9 @@
 * Тип приложения: MPA
 * Backend: Java
 * Frontend: HTML, CSS
-* БД: PostgreSQL
+* БД: PostgreSQL (взаимодействие через JDBC)
+* Сборка: Gradle
+* Фреймворки: Spring
 
 ## Верхнеуровневое разбиение на компоненты
 
