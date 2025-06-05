@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет консультанта</title>
+    <link rel="stylesheet" th:href="@{/client-main.css}">
+    <link rel="stylesheet" th:href="@{/consultant.css}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">Логотип</div>
+                <div class="user-profile">
+                    <a th:href="@{/consultant/account}" th:text="${login}" class="btn-account"></a>
+                    <a th:href="@{/}" class="btn-account">Выйти</a>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <main class="account-page">
+        <section class="section">
+            <div class="container">
+                <h1>Личный кабинет консультанта</h1>
+                
+                <div class="consultant-tabs">
+                    <div class="consultant-tab active" onclick="openTab(event, 'profile')">Профиль</div>
+                    <div class="consultant-tab" onclick="openTab(event, 'orders')">Мои заказы</div>
+                    <div class="consultant-tab" onclick="openTab(event, 'reviews')">Отзывы</div>
+                    <div class="consultant-tab" onclick="openTab(event, 'chats')">Чаты</div>
+                </div>
+                
+                <!-- Вкладка профиля -->
+                <div id="profile" class="consultant-tab-content active">
+                    <div class="account-grid">
+                        <div class="account-profile">
+                            <div class="profile-header">
+                                <div class="consultant-photo" style="background-image: url('https://via.placeholder.com/150')"></div>
+                                <h2 th:text="${consultant.fio}"></h2>
+                                <p class="specialization" th:text="${consultant.specialization}"></p>
+                                <p class="rating" th:if="${consultant.rating != null}" 
+                                   th:text="'Рейтинг: ' + ${#numbers.formatDecimal(consultant.rating, 1, 2)} + ' ★'"></p>
+                            </div>
+                            
+                            <form class="profile-form" th:action="@{/consultant/account/update}" method="post">
+                                <div class="form-group">
+                                    <label for="fio">ФИО</label>
+                                    <input type="text" id="fio" name="fio" th:value="${consultant.fio}" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="specialization">Специализация</label>
+                                    <input type="text" id="specialization" name="specialization" 
+                                           th:value="${consultant.specialization}" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="email">Email</label>
+                                    <input type="email" id="email" name="email" th:value="${consultant.email}" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="tel">Телефон</label>
+                                    <input type="tel" id="tel" name="tel" th:value="${consultant.tel}" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="age">Возраст</label>
+                                    <input type="number" id="age" name="age" th:value="${consultant.age}" 
+                                           min="18" max="80" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="experience">Опыт работы (лет)</label>
+                                    <input type="number" id="experience" name="experience" 
+                                           th:value="${consultant.experience}" 
+                                           th:attr="max=${consultant.age} - 18" min="0" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="about">О себе</label>
+                                    <textarea id="about" name="about" rows="4" maxlength="1000" 
+                                              th:text="${consultant.about}"></textarea>
+                                </div>
+                                                        
+                                <div class="form-group">
+                                    <label for="password">Новый пароль</label>
+                                    <input type="password" id="password" name="password" minlength="8"
+                                              th:text="${consultant.password}">
+                                </div>
+                                
+                                <button type="submit" class="btn">Сохранить изменения</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Вкладка заказов -->
+                <div id="orders" class="consultant-tab-content">
+                    <h2>Мои заказы</h2>
+                    
+                    <div class="orders-list" th:if="${not #lists.isEmpty(orders)}">
+                        <div class="order-card" th:each="order : ${orders}">
+                            <div class="order-header">
+                                <h3 th:text="'Заказ №' + ${order.id}"></h3>
+                                <span class="order-status" th:text="${order.status}"></span>
+                            </div>
+                            
+                            <div class="order-details">
+                                <p><strong>Стоимость:</strong> <span th:text="${order.cost} + ' руб.'"></span></p>
+                            </div>
+                            
+                            <div class="order-actions">
+                                <a th:if="${order.status == 'PENDING'}" 
+                                   th:href="@{'/consultant/orders/' + ${order.id} + '/accept'}" 
+                                   class="btn">Принять заказ</a>
+                                <a th:if="${order.status == 'IN_PROGRESS'}" 
+                                   th:href="@{'/consultant/orders/' + ${order.id} + '/complete'}" 
+                                   class="btn">Завершить</a>
+                                <a th:if="${order.status == 'IN_PROGRESS'}" 
+                                   th:href="@{'/consultant/orders/' + ${order.id} + '/cancel'}" 
+                                   class="btn">Отменить</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer id="contacts">
+        <div class="container">
+            <h3>Контакты</h3>
+            <p>Телефон: +7 (123) 456-78-90</p>
+            <p>Email: info@ya.ru</p>
+            <p>Адрес: г. Москва, ул. Примерная, 123</p>
+            <div class="copyright">© 2023 Ваша компания. Все права защищены.</div>
+        </div>
+    </footer>
+
+    <script>
+        function openTab(evt, tabName) {
+            // Скрыть все вкладки
+            var tabContents = document.getElementsByClassName("consultant-tab-content");
+            for (var i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove("active");
+            }
+            
+            // Убрать активный класс у всех вкладок
+            var tabs = document.getElementsByClassName("consultant-tab");
+            for (var i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove("active");
+            }
+            
+            // Показать текущую вкладку
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+        
+        // Валидация опыта работы при изменении возраста
+        document.getElementById('age').addEventListener('change', function() {
+            var age = parseInt(this.value);
+            var experienceInput = document.getElementById('experience');
+            var maxExperience = age - 18;
+            experienceInput.max = maxExperience;
+            
+            if (parseInt(experienceInput.value) > maxExperience) {
+                experienceInput.value = maxExperience;
+            }
+        });
+    </script>
+</body>
+</html>

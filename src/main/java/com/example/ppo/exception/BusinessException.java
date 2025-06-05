@@ -1,10 +1,15 @@
 package com.example.ppo.exception;
 
-public class BusinessException extends Exception {
+public class BusinessException extends RuntimeException {
     private final String code;
 
-    public BusinessException(String message, String code) {
-        super(message);
+    public BusinessException(String msg, String code) {
+        super(msg);
+        this.code = code;
+    }
+
+    public BusinessException(String code) {
+        super("Unexpected error");
         this.code = code;
     }
 

@@ -2,114 +2,164 @@ package com.example.ppo.review;
 
 import com.example.ppo.client.Client;
 import com.example.ppo.consultant.Consultant;
-import com.example.ppo.exception.BusinessException;
+import com.example.ppo.consultant.IConsultantRepository;
+import com.example.ppo.exception.review.*;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import java.time.LocalDateTime;
 import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ReviewServiceTest {
-    
+
+    @Mock
+    private IReviewRepository reviewRepo;
+
+    @Mock
+    private IConsultantRepository consRepo;
+
     @InjectMocks
     private ReviewService reviewService;
-    
-    @Mock(lenient = true)
-    private Client mockClient;
-    
-    @Mock(lenient = true)
-    private Consultant mockConsultant;
-    
+
+    @Mock
+    private Client testClient;
+
+    @Mock
+    private Consultant testConsultant;
+
+    @Mock
+    private Review testReview;
+
     @BeforeEach
     void setUp() {
-        when(mockClient.getId()).thenReturn(1L);
-        when(mockConsultant.getId()).thenReturn(1L);
+        testClient = Client.builder()
+                .id(1L)
+                .login("client1")
+                .build();
+
+        testConsultant = Consultant.builder()
+                .id(1L)
+                .login("consultant1")
+                .build();
+
+        testReview = Review.builder()
+                .id(1L)
+                .client(testClient)
+                .consultant(testConsultant)
+                .rating(Rating.AWESOME)
+                .text("Great service!")
+                .datetime(LocalDateTime.now())
+                .build();
     }
 
     @Test
-    void createReview_ShouldSuccessfullyCreateReview() throws BusinessException {
-        Review review = reviewService.createReview(mockClient, mockConsultant, 5, "Excellent service!");
-        
-        assertNotNull(review);
-        assertEquals(5, review.getNumericRating());
-        assertEquals("Excellent service!", review.getText());
-        assertEquals(mockClient, review.getClient());
-        assertEquals(mockConsultant, review.getConsultant());
-        assertNotNull(review.getDatetime());
-        assertTrue(review.getId() > 0);
+    void createReview_InvalidReview_ThrowsValidationException() {
+        // Arrange
+        Review invalidReview = Review.builder().build();
+
+        // Act & Assert
+        assertThrows(ReviewValidationException.class, () -> reviewService.createReview(invalidReview));
+        verify(reviewRepo, never()).save(any());
     }
 
     @Test
-    void createReview_ShouldSetCurrentDateTime() throws BusinessException {
-        Review review = reviewService.createReview(mockClient, mockConsultant, 4, "Good");
-        LocalDateTime now = LocalDateTime.now();
-        
-        assertTrue(review.getDatetime().isBefore(now.plusSeconds(1)));
-        assertTrue(review.getDatetime().isAfter(now.minusSeconds(1)));
+    void createReview_RepositoryException_ThrowsOperationException() {
+        // Arrange
+        when(reviewRepo.save(any(Review.class))).thenThrow(new RuntimeException("DB error"));
+
+        // Act & Assert
+        assertThrows(ReviewOperationException.class, () -> reviewService.createReview(testReview));
     }
 
     @Test
-    void createReview_WithInvalidRating_ShouldThrowException() {
-        assertThrows(BusinessException.class, () -> reviewService.createReview(mockClient, mockConsultant, 0, "Test"));
-        assertThrows(BusinessException.class, () -> reviewService.createReview(mockClient, mockConsultant, 6, "Test"));
+    void updateReview_ValidReview_ReturnsUpdatedReview() throws ReviewValidationException, ReviewNotFoundException, ReviewOperationException {
+        // Arrange
+        when(reviewRepo.update(any(Review.class))).thenReturn(testReview);
+
+        // Act
+        Review result = reviewService.updateReview(testReview);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(testReview, result);
+        verify(reviewRepo).update(testReview);
     }
 
     @Test
-    void createReview_WithEmptyText_ShouldThrowException() {
-        assertThrows(BusinessException.class, () -> reviewService.createReview(mockClient, mockConsultant, 3, ""));
-        assertThrows(BusinessException.class, () -> reviewService.createReview(mockClient, mockConsultant, 3, "   "));
+    void updateReview_InvalidReview_ThrowsValidationException() {
+        // Arrange
+        Review invalidReview = Review.builder().build();
+
+        // Act & Assert
+        assertThrows(ReviewValidationException.class, () -> reviewService.updateReview(invalidReview));
+        verify(reviewRepo, never()).update(any());
     }
 
     @Test
-    void createReview_WithNullText_ShouldThrowException() {
-        assertThrows(BusinessException.class, () -> reviewService.createReview(mockClient, mockConsultant, 3, null));
+    void getClientReviews_ReturnsOrderedReviews() {
+        // Arrange
+        List<Review> expectedReviews = List.of(testReview);
+        when(reviewRepo.findByClient_IdOrderByDatetimeDesc(1L))
+                .thenReturn(expectedReviews);
+
+        // Act
+        List<Review> result = reviewService.getClientReviews(testClient);
+
+        // Assert
+        assertEquals(1, result.size());
+        assertEquals(expectedReviews, result);
+        verify(reviewRepo).findByClient_IdOrderByDatetimeDesc(1L);
     }
 
     @Test
-    void getAverageRating_ShouldReturnCorrectValue() throws BusinessException {
-        Review review1 = new Review();
-        review1.setRating(5);
-        review1.setConsultant(mockConsultant);
-        
-        Review review2 = new Review();
-        review2.setRating(3);
-        review2.setConsultant(mockConsultant);
-        
-        Review review3 = new Review();
-        review3.setRating(4);
-        review3.setConsultant(mockConsultant);
-        
-        reviewService.createReview(mockClient, mockConsultant, 5, "Great");
-        reviewService.createReview(mockClient, mockConsultant, 3, "Average");
-        reviewService.createReview(mockClient, mockConsultant, 4, "Good");
-        
-        double average = reviewService.getAverageRating(mockConsultant);
-        
-        assertEquals(4.0, average, 0.001);
+    void getConsultantReviews_ReturnsOrderedReviews() {
+        // Arrange
+        List<Review> expectedReviews = List.of(testReview);
+        when(reviewRepo.findByConsultant_IdOrderByDatetimeDesc(1L))
+                .thenReturn(expectedReviews);
+
+        // Act
+        List<Review> result = reviewService.getConsultantReviews(testConsultant);
+
+        // Assert
+        assertEquals(1, result.size());
+        assertEquals(expectedReviews, result);
+        verify(reviewRepo).findByConsultant_IdOrderByDatetimeDesc(1L);
     }
 
     @Test
-    void getAverageRating_WithNoReviews_ShouldReturnZero() {
-        double average = reviewService.getAverageRating(mockConsultant);
-        assertEquals(0.0, average, 0.001);
+    void getConsultantAverageRating_WithReviews_ReturnsCorrectAverage() {
+        // Arrange
+        Review review1 = Review.builder().rating(Rating.GOOD).build(); // 4
+        Review review2 = Review.builder().rating(Rating.AWESOME).build();   // 5
+        when(reviewRepo.findByConsultant_IdOrderByDatetimeDesc(1L))
+                .thenReturn(List.of(review1, review2));
+
+        // Act
+        double average = reviewService.getConsultantAverageRating(testConsultant);
+
+        // Assert
+        assertEquals(4.5, average);
     }
 
     @Test
-    void createMultipleReviews_ShouldGenerateUniqueIds() throws BusinessException {
-        Review review1 = reviewService.createReview(mockClient, mockConsultant, 5, "First");
-        Review review2 = reviewService.createReview(mockClient, mockConsultant, 4, "Second");
-        Review review3 = reviewService.createReview(mockClient, mockConsultant, 3, "Third");
-        
-        assertNotEquals(review1.getId(), review2.getId());
-        assertNotEquals(review1.getId(), review3.getId());
-        assertNotEquals(review2.getId(), review3.getId());
+    void getConsultantAverageRating_NoReviews_ReturnsZero() {
+        // Arrange
+        when(reviewRepo.findByConsultant_IdOrderByDatetimeDesc(1L))
+                .thenReturn(List.of());
+
+        // Act
+        double average = reviewService.getConsultantAverageRating(testConsultant);
+
+        // Assert
+        assertEquals(0.0, average);
     }
 }

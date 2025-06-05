@@ -2,183 +2,251 @@ package com.example.ppo.order;
 
 import com.example.ppo.client.Client;
 import com.example.ppo.consultant.Consultant;
-import com.example.ppo.exception.BusinessException;
+import com.example.ppo.exception.order.*;
+import com.example.ppo.orderproduct.IOrderProductRepository;
+import com.example.ppo.orderproduct.ProductQuantityPair;
 import com.example.ppo.product.Product;
-import com.example.ppo.orderproduct.OrderProduct;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-
+import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
+
+    @Mock
+    private IOrderRepository orderRepo;
+
+    @Mock
+    private IOrderProductRepository opRepo;
+
+    @InjectMocks
     private OrderService orderService;
 
-    @Mock(lenient = true)
-    private Client mockClient;
+    @Mock
+    private Client testClient;
 
-    @Mock(lenient = true)
-    private Consultant mockConsultant;
+    @Mock
+    private Consultant testConsultant;
 
-    @Mock(lenient = true)
-    private Product mockProduct1;
+    @Mock
+    private Product testProduct1;
 
-    @Mock(lenient = true)
-    private Product mockProduct2;
+    @Mock
+    private Product testProduct2;
 
-    @Mock(lenient = true)
-    private OrderProduct mockOrderProduct1;
-
-    @Mock(lenient = true)
-    private OrderProduct mockOrderProduct2;
+    @Mock
+    private Order testOrder;
 
     @BeforeEach
     void setUp() {
-        orderService = new OrderService();
+        testClient = Client.builder()
+                .id(1L)
+                .login("client1")
+                .password("password")
+                .email("client@test.com")
+                .build();
 
-        when(mockClient.getId()).thenReturn(1L);
-        when(mockConsultant.getId()).thenReturn(1L);
-    }
+        testConsultant = Consultant.builder()
+                .id(1L)
+                .login("consultant1")
+                .password("password")
+                .email("consultant@test.com")
+                .build();
 
-    private List<OrderProduct> createMockOrderProducts() {
-        when(mockProduct1.getId()).thenReturn(1L);
-        when(mockProduct1.getCost()).thenReturn(100.0);
-        when(mockOrderProduct1.getProduct()).thenReturn(mockProduct1);
-        when(mockOrderProduct1.getQuantity()).thenReturn(2);
+        testProduct1 = Product.builder()
+                .id(1L)
+                .name("Product 1")
+                .cost(100.0)
+                .build();
 
-        when(mockProduct2.getId()).thenReturn(2L);
-        when(mockProduct2.getCost()).thenReturn(200.0);
-        when(mockOrderProduct2.getProduct()).thenReturn(mockProduct2);
-        when(mockOrderProduct2.getQuantity()).thenReturn(1);
+        testProduct2 = Product.builder()
+                .id(2L)
+                .name("Product 2")
+                .cost(200.0)
+                .build();
 
-        return List.of(mockOrderProduct1, mockOrderProduct2);
-    }
-
-    @Test
-    void createOrder_Success() throws BusinessException {
-        List<OrderProduct> mockProducts = createMockOrderProducts();
-
-        Order order = orderService.createOrder(mockClient, mockProducts);
-
-        assertNotNull(order);
-        assertEquals(OrderStatus.PENDING, order.getStatus());
-        assertEquals(mockClient, order.getClient());
-        assertEquals(2, order.getOrderProducts().size());
-        assertTrue(order.getId() > 0);
-
-        verify(mockOrderProduct1).setOrder(order);
-        verify(mockOrderProduct2).setOrder(order);
-    }
-
-    @Test
-    void createOrder_NullClient_ThrowsException() {
-        assertThrows(BusinessException.class,
-            () -> orderService.createOrder(null, createMockOrderProducts()));
+        testOrder = Order.builder()
+                .id(1L)
+                .client(testClient)
+                .status(OrderStatus.PENDING)
+                .cost(0.0)
+                .datetime(LocalDateTime.now())
+                .build();
     }
 
     @Test
-    void assignConsultant_Success() throws BusinessException {
-        Order order = orderService.createOrder(mockClient, createMockOrderProducts());
-        
-        Order updated = orderService.assignConsultant(order, mockConsultant);
-
-        assertEquals(mockConsultant, updated.getConsultant());
-        verify(mockConsultant).addOrder(updated);
+    void createOrder_EmptyItems_ThrowsException() {
+        assertThrows(OrderValidationException.class,
+                () -> orderService.createOrder(testClient, List.of()));
     }
 
     @Test
-    void calculateTotal_ReturnsCorrectSum() throws BusinessException {
-        List<OrderProduct> mockProducts = createMockOrderProducts();
-        
-        Order order = orderService.createOrder(mockClient, mockProducts);
-        
-        double total = orderService.calculateTotal(order);
-
-        assertEquals(400.0, total);
-        verify(mockProduct1, times(1)).getCost();
-        verify(mockProduct2).getCost();
+    void createOrder_NullItems_ThrowsException() {
+        assertThrows(OrderValidationException.class,
+                () -> orderService.createOrder(testClient, null));
     }
 
     @Test
-    void getOrderById_ReturnsCorrectOrder() throws BusinessException {
-        List<OrderProduct> mockProducts = createMockOrderProducts();
-        
-        Order created = orderService.createOrder(mockClient, mockProducts);
-        
-        Order found = orderService.getOrderById(created.getId());
-
-        assertEquals(created, found);
+    void addProductToOrder_NullProduct_ThrowsException() {
+        Order order = Order.builder().cost(0.0).build();
+        ProductQuantityPair op = new ProductQuantityPair(null, 2);
+        assertThrows(OrderValidationException.class,
+                () -> orderService.addProductToOrder(order, op));
     }
 
     @Test
-    void createOrder_ShouldSetCurrentDateTime() throws BusinessException {
-        List<OrderProduct> mockProducts = createMockOrderProducts();
-        
-        Order order = orderService.createOrder(mockClient, mockProducts);
-
-        assertNotNull(order.getDatetime());
-        
-        LocalDateTime now = LocalDateTime.now();
-        
-        assertTrue(order.getDatetime().isBefore(now.plusSeconds(1)));
-        assertTrue(order.getDatetime().isAfter(now.minusMinutes(1)));
+    void addProductToOrder_InvalidQuantity_ThrowsException() {
+        Order order = Order.builder().cost(0.0).build();
+        ProductQuantityPair op = new ProductQuantityPair(testProduct1, 0);
+        assertThrows(OrderValidationException.class,
+                () -> orderService.addProductToOrder(order, op));
     }
 
     @Test
-    void createOrder_WithEmptyProductsList_ShouldThrowException() {
-         assertThrows(BusinessException.class,
-            () -> orderService.createOrder(mockClient, List.of()));
-     }
+    void assignConsultant_Success() throws OrderNotFoundException, OrderOperationException {
+        Order pendingOrder = Order.builder()
+                .id(1L)
+                .status(OrderStatus.PENDING)
+                .build();
 
-     @Test
-     void calculateTotal_WithZeroQuantity_ShouldReturnZero() throws BusinessException {
-         OrderProduct zeroQuantityProduct = mock(OrderProduct.class);
-         when(zeroQuantityProduct.getQuantity()).thenReturn(0);
-         when(zeroQuantityProduct.getProduct()).thenReturn(mockProduct1);
+        when(orderRepo.findById(1L)).thenReturn(Optional.of(pendingOrder));
+        when(orderRepo.update(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-         Order order = orderService.createOrder(mockClient, List.of(zeroQuantityProduct));
-         assertEquals(0.0, orderService.calculateTotal(order));
-     }
+        Order result = orderService.assignConsultant(pendingOrder, testConsultant);
 
-     @Test
-     void getOrderById_WithNonExistingId_ShouldReturnNull() {
-         assertNull(orderService.getOrderById(999L));
-     }
+        assertEquals(testConsultant, result.getConsultant());
+        assertEquals(OrderStatus.IN_PROGRESS, result.getStatus());
+        verify(orderRepo).update(result);
+    }
 
-     @Test
-     void assignConsultant_ToNullOrder_ShouldThrowException() {
-         assertThrows(BusinessException.class,
-             () -> orderService.assignConsultant(null, mockConsultant));
-     }
+    @Test
+    void assignConsultant_OrderNotFound_ThrowsException() {
+        when(orderRepo.findById(1L)).thenReturn(Optional.empty());
 
-     @Test
-     void calculateTotal_ForNullOrder_ShouldReturnZero() {
-         assertEquals(0.0, orderService.calculateTotal(null));
-     }
+        assertThrows(OrderOperationException.class,
+                () -> orderService.assignConsultant(testOrder, testConsultant));
+    }
 
-     @Test
-     void createOrder_ShouldAddOrderToClient() throws BusinessException {
-         List<OrderProduct> mockProducts = createMockOrderProducts();
-         
-         Order order = orderService.createOrder(mockClient, mockProducts);
+    @Test
+    void assignConsultant_NotPendingStatus_ThrowsException() {
+        Order inProgressOrder = Order.builder()
+                .id(1L)
+                .status(OrderStatus.IN_PROGRESS)
+                .build();
 
-         verify(mockClient).addOrder(order);
-     }
+        when(orderRepo.findById(1L)).thenReturn(Optional.of(inProgressOrder));
 
-     @Test
-     void assignConsultant_ShouldAddOrderToConsultant() throws BusinessException {
-         List<OrderProduct> mockProducts = createMockOrderProducts();
-         
-         Order order = orderService.createOrder(mockClient, mockProducts);
-         
-         orderService.assignConsultant(order, mockConsultant);
+        assertThrows(OrderOperationException.class,
+                () -> orderService.assignConsultant(inProgressOrder, testConsultant));
+    }
 
-         verify(mockConsultant).addOrder(order);
-     }
+    @Test
+    void completeOrder_Success() throws OrderNotFoundException, OrderOperationException {
+        Order inProgressOrder = Order.builder()
+                .id(1L)
+                .consultant(testConsultant)
+                .status(OrderStatus.IN_PROGRESS)
+                .build();
+
+        when(orderRepo.findById(1L)).thenReturn(Optional.of(inProgressOrder));
+        when(orderRepo.update(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Order result = orderService.completeOrder(inProgressOrder, testConsultant);
+
+        assertEquals(OrderStatus.COMPLETED, result.getStatus());
+        verify(orderRepo).update(result);
+    }
+
+    @Test
+    void completeOrder_WrongConsultant_ThrowsException() {
+        Consultant otherConsultant = Consultant.builder().login("other").build();
+        Order inProgressOrder = Order.builder()
+                .id(1L)
+                .consultant(testConsultant)
+                .status(OrderStatus.IN_PROGRESS)
+                .build();
+
+        when(orderRepo.findById(1L)).thenReturn(Optional.of(inProgressOrder));
+
+        assertThrows(OrderOperationException.class,
+                () -> orderService.completeOrder(inProgressOrder, otherConsultant));
+    }
+
+    @Test
+    void cancelOrder_Success() throws OrderNotFoundException, OrderOperationException {
+        Order inProgressOrder = Order.builder()
+                .id(1L)
+                .consultant(testConsultant)
+                .status(OrderStatus.IN_PROGRESS)
+                .build();
+
+        when(orderRepo.findById(1L)).thenReturn(Optional.of(inProgressOrder));
+        when(orderRepo.update(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Order result = orderService.cancelOrder(inProgressOrder, testConsultant);
+
+        assertEquals(OrderStatus.CANCELLED, result.getStatus());
+        verify(orderRepo).update(result);
+    }
+
+    @Test
+    void calculateTotal_ReturnsCorrectValue() {
+        testOrder.setCost(350.0);
+        double result = orderService.calculateTotal(testOrder);
+        assertEquals(350.0, result, 0.001);
+    }
+
+    @Test
+    void getOrderById_Found() {
+        when(orderRepo.findById(1L)).thenReturn(Optional.of(testOrder));
+
+        Optional<Order> result = orderService.getOrderById(1L);
+
+        assertTrue(result.isPresent());
+        assertEquals(testOrder, result.get());
+    }
+
+    @Test
+    void getOrderById_NotFound() {
+        when(orderRepo.findById(1L)).thenReturn(Optional.empty());
+
+        Optional<Order> result = orderService.getOrderById(1L);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void findByClient_ReturnsOrders() {
+        when(orderRepo.findByClient_Id(1L)).thenReturn(List.of(testOrder));
+
+        List<Order> result = orderService.getByClient(testClient);
+
+        assertEquals(1, result.size());
+        assertEquals(testOrder, result.get(0));
+    }
+
+    @Test
+    void findByConsultant_ReturnsOrders() {
+        Order completedOrder = Order.builder()
+                .id(2L)
+                .consultant(testConsultant)
+                .status(OrderStatus.COMPLETED)
+                .build();
+
+        when(orderRepo.findByConsultant_Id(1L)).thenReturn(List.of(completedOrder));
+
+        List<Order> result = orderService.getByConsultant(testConsultant);
+
+        assertEquals(1, result.size());
+        assertEquals(completedOrder, result.get(0));
+    }
 }

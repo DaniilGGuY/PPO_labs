@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Авторизация</title>
+    <link rel="stylesheet" th:href="@{/auth.css}">
+</head>
+<body>
+    <div class="container" id="container">
+        <div class="form-container sign-up-container">
+            <form th:action="@{/register}" method="post">
+                <h1>Зарегистрироваться</h1>
+                <input type="text" placeholder="Логин" name="login" required 
+                        pattern="[a-zA-Z0-9]+" title="Только латинские буквы и цифры" />
+                <input type="password" placeholder="Пароль" name="password" required 
+                        minlength="8" title="Минимум 8 символов" />
+                <input type="tel" placeholder="Телефон" name="tel" 
+                        pattern="\+?[0-9\s\-\(\)]{10,20}" 
+                        title="Введите корректный номер телефона (например, +7 123 456-78-90)" 
+                        required />
+                <input type="email" placeholder="Email" name="email" 
+                        pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" 
+                        title="Введите корректный email (например, example@mail.ru)"
+                        required />
+                <input type="text" placeholder="ФИО" name="fio" />
+                <input type="text" placeholder="Название компании" name="company" required />
+                <button type="submit">Зарегистрироваться</button>
+            </form>
+        </div>
+        <div class="form-container sign-in-container">
+            <form th:action="@{/login}" method="post">
+                <h1>Войти</h1>
+                <input type="text" placeholder="Логин" name="login" required />
+                <input type="password" placeholder="Пароль" name="password" required />
+                <a href="#">Забыли пароль?</a>
+                <div th:if="${param.error}" class="error-message">
+                    Неверный логин или пароль
+                </div>
+                <button type="submit">Войти</button>
+            </form>
+        </div>
+        <div class="overlay-container">
+            <div class="overlay">
+                <div class="overlay-panel overlay-left">
+                    <h1>С возвращением!</h1>
+                    <p>Чтобы начать работу, пожалуйста, войдите под своими данными</p>
+                    <button class="ghost" id="signIn">Войти</button>
+                </div>
+                <div class="overlay-panel overlay-right">
+                    <h1>Привет!</h1>
+                    <p>Зарегистрируйтесь и начните путешествие с нами</p>
+                    <button class="ghost" id="signUp">Зарегистрироваться</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const signUpButton = document.getElementById('signUp');
+        const signInButton = document.getElementById('signIn');
+        const container = document.getElementById('container');
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.location.pathname.endsWith('/register')) {
+                container.classList.add("right-panel-active");
+            }
+        });
+        signUpButton.addEventListener('click', () => {
+            container.classList.add("right-panel-active");
+        });
+        signInButton.addEventListener('click', () => {
+            container.classList.remove("right-panel-active");
+        });
+    </script>
+</body>
+</html>

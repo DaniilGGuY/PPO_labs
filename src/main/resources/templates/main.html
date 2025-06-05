@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сайт - Бухгалтерское сопровождение</title>
+    <link rel="stylesheet" th:href="@{/main.css}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">Логотип</div>
+                <nav>
+                    <ul>
+                        <li><a href="#services">Услуги</a></li>
+                        <li><a href="#consultants">Консультанты</a></li>
+                        <li><a href="#reviews">Отзывы</a></li>
+                        <li><a href="#contacts">Контакты</a></li>
+                    </ul>
+                </nav>
+                <div class="auth-buttons">
+                    <a th:href="@{/login}" class="btn-auth">Вход</a>
+                    <a th:href="@{/register}" class="btn-auth">Регистрация</a>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <main>
+        <!-- Услуги --> 
+        <section id="services" class="section">
+            <div class="container">
+                <h2>Наши услуги</h2>
+                <div class="services-grid">
+                    <div class="service-card" th:each="service : ${services}">
+                        <h3 th:text="${service.name}"></h3>
+                        <p th:text="${service.about}"></p>
+                        <a th:href="@{/login}" class="btn">Заказать консультацию</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Консультанты -->
+        <section id="consultants" class="section dark-section">
+            <div class="container">
+                <h2>Наши консультанты</h2>
+                <div class="consultants-grid">
+                    <div class="consultant-card" th:each="consultant : ${consultants}">
+                        <div class="consultant-photo" style="background-image: url('https://via.placeholder.com/200')"></div>
+                        <h3 th:text="${consultant.fio}"></h3>
+                        <p class="specialization" th:text="${consultant.specialization}"></p>
+                        <p class="experience" th:text="'Опыт: ' + ${consultant.experience} + ' лет'"></p>
+                        <a th:href="@{/login}" class="btn-outline">Связаться</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Отзывы -->
+        <section id="reviews" class="section">
+            <div class="container">
+                <h2>Отзывы наших клиентов</h2>
+                <div class="reviews-grid">
+                    <div class="review-card" th:each="review, iterStat : ${reviews}">
+                        <div class="review-content">
+                            <h3 th:text="${clients[iterStat.index]}"></h3>
+                            <p class="review-text" th:text="${review.text}"></p>
+                            <div class="review-rating" th:text="${#strings.repeat('★', review.numericRating)} + ${#strings.repeat('☆', 5 - review.numericRating)}">★★★★★</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer id="contacts">
+        <div class="container">
+            <h3>Контакты</h3>
+            <p>Телефон: +7 (123) 456-78-90</p>
+            <p>Email: info@ya.ru</p>
+            <p>Адрес: г. Москва, ул. Примерная, 123</p>
+            <div class="copyright">© 2023 Ваша компания. Все права защищены.</div>
+        </div>
+    </footer>
+</body>
+</html>

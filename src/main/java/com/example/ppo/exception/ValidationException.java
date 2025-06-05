@@ -1,9 +1,11 @@
 package com.example.ppo.exception;
 
-import com.example.ppo.exception.BusinessException;
-
 public class ValidationException extends BusinessException {
-    public ValidationException(String field, String message, String code) {
-        super(String.format("Validation error for %s: %s", field, message), code);
+    public ValidationException(String field, String msg, String code) {
+        super(String.format("Validation error for %s: %s", field, msg), code);
+    }
+
+    public ValidationException(String msg, String code) {
+        super(String.format("Validation error: %s", msg), code);
     }
 }

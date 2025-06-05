@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет - Бухгалтерское сопровождение</title>
+    <link rel="stylesheet" th:href="@{/client.css}">
+    <link rel="stylesheet" th:href="@{/client-main.css}">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">Логотип</div>
+                <div class="user-profile">
+                    <a th:href="@{/client/account}" th:text="${login}" class="btn-account"></a>
+                    <a th:href="@{/}" class="btn-account">Выйти</a>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <main class="account-page">
+        <section class="section">
+            <div class="container">
+                <h1>Личный кабинет</h1>
+                
+                <div class="account-grid">
+                    <!-- Блок профиля -->
+                    <div class="account-profile">
+                        <div class="profile-header">
+                            <div class="profile-avatar" style="background-image: url('https://via.placeholder.com/150')"></div>
+                            <h2 th:text="${client.fio} ?: 'ФИО не указано'"></h2>
+                            <p class="company-name" th:text="${client.company} ?: 'Название компании не указано'"></p>
+                        </div>
+                        
+                        <form class="profile-form" th:action="@{/client/account/update}" method="post">
+                            <div class="form-group">
+                                <label for="fio">ФИО</label>
+                                <input type="text" id="fio" name="fio" th:value="${client.fio}" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="company">Название компании</label>
+                                <input type="text" id="company" name="company" th:value="${client.company}">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="email">Email</label>
+                                <input type="email" id="email" name="email" th:value="${client.email}" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="tel">Телефон</label>
+                                <input type="tel" id="tel" name="tel" th:value="${client.tel}">
+                            </div>
+                            
+                            
+                            <div class="form-group">
+                                <label for="password">Новый пароль</label>
+                                <input type="password" id="password" name="${client.password}">
+                            </div>
+                            
+                            <button type="submit" class="btn">Сохранить изменения</button>
+                        </form>
+                    </div>
+                    
+                    <!-- Блок заказов -->
+                    <div class="account-orders">
+                        <h2>Мои заказы</h2>
+                        <div class="orders-list">
+                            <div class="order-card" th:each="order : ${orders}">
+                                <div class="order-header">
+                                    <h3 th:text="'Заказ №' + ${order.id}"></h3>
+                                    <span class="order-status" th:text="${order.status}"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer id="contacts">
+        <div class="container">
+            <h3>Контакты</h3>
+            <p>Телефон: +7 (123) 456-78-90</p>
+            <p>Email: info@ya.ru</p>
+            <p>Адрес: г. Москва, ул. Примерная, 123</p>
+            <div class="copyright">© 2023 Ваша компания. Все права защищены.</div>
+        </div>
+    </footer>
+</body>
+</html>

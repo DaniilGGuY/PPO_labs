@@ -2,84 +2,86 @@ package com.example.ppo.review;
 
 import com.example.ppo.client.Client;
 import com.example.ppo.consultant.Consultant;
-import java.time.LocalDateTime;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
+
 import jakarta.persistence.*;
 import lombok.*;
-
-enum Rating {
-    AWFUL(1),
-    BAD(2),
-    NORMAL(3),
-    GOOD(4),
-    AWESOME(5);
-
-    private final int numericValue;
-
-    Rating(int numericValue) {
-        this.numericValue = numericValue;
-    }
-
-    public int getNumericValue() {
-        return numericValue;
-    }
-
-    public static Rating fromValue(int value) {
-        for (Rating r : values()) {
-            if (r.numericValue == value) {
-                return r;
-            }
-        }
-        throw new IllegalArgumentException("Invalid rating value: " + value);
-    }
-}
+import java.time.LocalDateTime;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 @Entity
-@Table(name = "reviews")
+@Table(name = "review")
+@Document(collection = "review")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
+@Builder
+@Schema(description = "Review entity")
 public class Review {
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private long id;
-	
-	@Enumerated(EnumType.STRING)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @org.springframework.data.annotation.Id
+    private Long id;
+    
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    @Setter(AccessLevel.NONE)
-	private Rating rating;
-	
-	@Column(nullable = false, updatable = false)
-	private LocalDateTime datetime = LocalDateTime.now();
-	
-	@Column(columnDefinition = "TEXT")
-	private String text;
-	
-	@ManyToOne(fetch = FetchType.LAZY)
+    @Field("rating")
+    private Rating rating;
+    
+    @Column
+    @Field("datetime")
+    @Builder.Default
+    private LocalDateTime datetime = LocalDateTime.now();
+    
+    @Column(columnDefinition = "TEXT")
+    @Field("text")
+    @Builder.Default
+    private String text = "";
+
+    // Только JPA аннотации
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id")
     private Client client;
-	
-	@ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "consultant_id", nullable = false)
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "consultant_id")
     private Consultant consultant;
-	
-	public void setRating(int ratingValue) {
-	    this.rating = Rating.fromValue(ratingValue);
-	}
-	
-	@PrePersist
-	public void prePersist() {
-		if (this.datetime == null) {
-			this.datetime = LocalDateTime.now();
-		}
-	}
-	
-	public int getNumericRating() {
+    
+    // MongoDB-специфичные поля (транзиентные - не сохраняются в JPA)
+    @Transient
+    @Field("client_id")
+    private String clientRef;
+    
+    @Transient
+    @Field("consultant_if")
+    private String consultantRef;
+    
+    @PostLoad
+    private void postLoad() {
+        if (client != null) {
+            this.clientRef = client.getId().toString();
+        }
+        if (consultant != null) {
+            this.consultantRef = consultant.getId().toString();
+        }
+    }
+    
+    public void setRating(int ratingValue) {
+        this.rating = Rating.fromValue(ratingValue);
+    }
+    
+    public int getNumericRating() {
         return rating != null ? rating.getNumericValue() : 0;
     }
-	
-	public boolean isValid() {
-        return rating != null;
+    
+    public boolean isValid() {
+        return rating != null && 
+               consultant != null && 
+               client != null &&
+               datetime != null && 
+               text != null;
     }
 }
