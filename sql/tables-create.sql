@@ -76,3 +76,44 @@ create table if not exists public.orderproduct (
     quantity integer not null check (quantity > 0)
 );
 
+
+create or replace function update_consultant_rating()
+returns trigger as $$
+declare
+    avg_rating float;
+    rating_sum integer := 0;
+    rating_count integer := 0;
+    rating_value integer;
+begin
+    for rating_value in 
+        select case rating
+            when 'AWFUL' then 1
+            when 'BAD' then 2
+            when 'NORMAL' then 3
+            when 'GOOD' then 4
+            when 'AWESOME' then 5
+            else 0
+        end
+        from review
+        where consultant_id = new.consultant_id
+    loop
+        rating_sum := rating_sum + rating_value;
+        rating_count := rating_count + 1;
+    end loop;
+    
+    if rating_count > 0 then
+        avg_rating := rating_sum::float / rating_count;        
+        update consultant
+        set rating = avg_rating
+        where id = new.consultant_id;
+    end if;
+    
+    return new;
+end;
+$$ language plpgsql;
+
+create trigger after_review_insert
+after insert on review
+for each row
+execute function update_consultant_rating();
+

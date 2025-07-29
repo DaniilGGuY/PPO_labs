@@ -37,11 +37,12 @@ values
 insert into public.review 
 (rating, text, client_id, consultant_id)
 values
-('BAD', 'Мне не понравилось', 399, 53),
-('GOOD', 'Мне понравилось', 400, 54),
-('AWESOME', 'Мне очень понравилось', 401, 55)
+('BAD', 'Мне не понравилось', 439, 64),
+('GOOD', 'Мне понравилось', 440, 65),
+('AWESOME', 'Мне очень понравилось', 441, 66)
 
 insert into public.manager 
 (login, password, tel, email, fio)
 values
 ('manager', 'manager123', '+79665554321', 'manager@man.ru', 'Менеджеров Менеджер Менеджерович');
+
